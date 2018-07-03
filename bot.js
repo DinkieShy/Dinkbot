@@ -210,7 +210,7 @@ var pollMessage = "";
 var pollAuthor;
 var poll;
 
-function poll(message){
+function pollFunction(message){
 	poll = message.content.replace("!poll ", "").split('\n');
 	var question = poll[0];
 	options = [];
@@ -229,6 +229,7 @@ function poll(message){
 			pollMessage = newPollMessage;
 		});
 	}
+	return;
 }
 
 client.on('messageReactionAdd', (reaction, user) =>{
@@ -278,7 +279,7 @@ client.on('message', function(message){
 			case 'poll':
 				if(pollMessage == ""){
 					pollAuthor = message.author.username;
-					poll(message);
+					pollFunction(message);
 				}
 				else{
 					message.channel.send("There's already an active poll!");
