@@ -206,7 +206,7 @@ function parseMessage(message){
 
 var options = [];
 var numToEmoji = [":zero:", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:"];
-var pollMessage;
+var pollMessage = "";
 var pollAuthor;
 var poll;
 
@@ -214,7 +214,7 @@ function poll(message){
 	poll = message.content.replace("!poll ", "").split('\n');
 	var question = poll[0];
 	options = [];
-	var newMessage = question + '\nReact with the emoji of the option you choose!';
+	var newMessage = "`" + question + '`\nReact with the emoji of the option you choose!';
 	if(poll.length > 11){
 		message.reply('Error: too many options! You can use a maximum of 10!');
 	}
@@ -222,7 +222,7 @@ function poll(message){
 		var pollReactions;
 		for(var i = 0; i < poll.length-1; i++){
 			options[i.toString() + "%E2%83%A3"] = 0;
-			newMessage += '\n' + numToEmoji[i] + ': ' + poll[i+1];
+			newMessage += '\n\n' + numToEmoji[i] + '`: ' + poll[i+1] + "`";
 		}
 		console.log('Created poll:\n' + newMessage);
 		message.channel.send(newMessage).then(newPollMessage => {
@@ -276,19 +276,25 @@ client.on('message', function(message){
 
         switch(cmd){
 			case 'poll':
-				pollAuthor = message.author.username;
-				poll(message);
+				if(pollMessage == ""){
+					pollAuthor = message.author.username;
+					poll(message);
+				}
+				else{
+					message.channel.send("There's already an active poll!");
+				}
 			break;
 
 			case 'endpoll':
 				console.log('end poll');
 				if(message.author.username == pollAuthor){
 					console.log('ending poll');
-					newMessage = "The poll has ended and the results are in!\n" + poll[0] + "\n";
+					newMessage = "The poll has ended and the results are in!\n```" + poll[0] + "```\n";
 					for(var i = 0; i < poll.length-1; i++){
-						newMessage += numToEmoji[i] + ": " + poll[i+1] + " has: " + options[i.toString() + "%E2%83%A3"] + " votes!\n";
+						newMessage += numToEmoji[i] + "`: " + poll[i+1] + " has: " + options[i.toString() + "%E2%83%A3"] + " votes!`\n";
 					}
 					message.channel.send(newMessage);
+					pollMessage = "";
 				}
 			break;
 
