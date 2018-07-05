@@ -214,7 +214,7 @@ function pollFunction(message){
 	poll = message.content.replace("!poll ", "").split('\n');
 	var question = poll[0];
 	options = [];
-	var newMessage = "`" + question + '`\nReact with the emoji of the option you choose!';
+	var newMessage = 'React with the emoji of the option you choose!\n```' + question + "```\n";
 	if(poll.length > 11){
 		message.reply('Error: too many options! You can use a maximum of 10!');
 	}
@@ -222,14 +222,13 @@ function pollFunction(message){
 		var pollReactions;
 		for(var i = 0; i < poll.length-1; i++){
 			options[i.toString() + "%E2%83%A3"] = 0;
-			newMessage += '\n\n' + numToEmoji[i] + '`: ' + poll[i+1] + "`";
+			newMessage += numToEmoji[i] + '`: ' + poll[i+1] + "`\n";
 		}
 		console.log('Created poll:\n' + newMessage);
 		message.channel.send(newMessage).then(newPollMessage => {
 			pollMessage = newPollMessage;
 		});
 	}
-	return;
 }
 
 client.on('messageReactionAdd', (reaction, user) =>{
@@ -237,6 +236,14 @@ client.on('messageReactionAdd', (reaction, user) =>{
 	console.log(reaction.emoji.identifier);
 	if(reaction.message.content = pollMessage){
 		options[reaction.emoji.identifier] += 1;
+	}
+});
+
+client.on('messageReactionRemove', (reaction, user) =>{
+	console.log('reaction added!');
+	console.log(reaction.emoji.identifier);
+	if(reaction.message.content = pollMessage){
+		options[reaction.emoji.identifier] -= 1;
 	}
 });
 
