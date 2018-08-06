@@ -51,6 +51,15 @@ client.on('ready', function(){
 					connection = newConnection;
 					console.log('Joined successfully');
 					connectedToVoice = true;
+//					ps.addCommand('cd "' + __dirname + '"');
+//					ps.addCommand('./scripts/voice.ps1 "Dink bot has joined"');
+//					ps.invoke().then(output => {
+//						dispatcher = connection.playFile(getDirectory("/scripts/output.wav"));
+//						dispatcher.setVolume(0.5);
+//					}).catch(err =>{
+//						console.log(err);
+//						ps.dispose();
+//					});
 					dispatcher = connection.playFile(getDirectory("/startup.mp3"));
 					dispatcher.setVolume(0.5);
 				});
@@ -81,14 +90,20 @@ client.on('voiceStateUpdate', function(oldMember, newMember){
 				connection = newConnection;
 				console.log('Joined successfully');
 				connectedToVoice = true;
+//				ps.addCommand('cd "' + __dirname + '"');
+//				ps.addCommand('./scripts/voice.ps1 "Dink bot has joined"');
+//				ps.invoke().then(output => {
+//					dispatcher = connection.playFile(getDirectory("/scripts/output.wav"));
+//					dispatcher.setVolume(0.5);
+//				}).catch(err =>{
+//					console.log(err);
+//					ps.dispose();
+//				});
 				dispatcher = connection.playFile(getDirectory("/startup.mp3"));
 				dispatcher.setVolume(0.5);
-				dispatcher.on('end', function(){
-					speaking = false;
-				});
 			});
 		}
-		else if(newMember.voiceChannel != undefined && oldMember.voiceChannel != undefined){
+		else if(newMember.voiceChannel != undefined && oldMember.voiceChannel != undefined && oldMember.voiceChannel != newMember.voiceChannel){
 			var channel = newMember.voiceChannel;
 			console.log('Dinkie moved channels');
 			connection.channel.leave();
@@ -103,7 +118,14 @@ client.on('voiceStateUpdate', function(oldMember, newMember){
 			ps.addCommand('cd \"' + __dirname + '\"');
 			ps.addCommand('./scripts/voice.ps1 \"' + thingToSay + '\"');
 			ps.invoke().then(output => {
-				connection.playFile(getDirectory("/scripts/output.wav"));
+				if(!dispatcher.speaking){
+					dispatcher = connection.playFile(getDirectory("/scripts/output.wav"));
+				}
+				else{
+					dispatcher.on('end', function(){
+						dispatcher = connection.playFile(getDirectory("/scripts/output.wav"));
+					});
+				}
 				if(newMember.roles.find('name', 'Chris') != undefined && chrisIsLate){
 					console.log("Chris joined and is late");
 					dispatcher.on('end', function(){
@@ -319,7 +341,14 @@ client.on('message', function(message){
 					ps.addCommand('cd \"' + __dirname + '\"');
 					ps.addCommand('./scripts/voice.ps1 \"' + thingToSay + '\"');
 					ps.invoke().then(output => {
-						connection.playFile(getDirectory("/scripts/output.wav"));
+						if(!dispatcher.speaking){
+							dispatcher = connection.playFile(getDirectory("/scripts/output.wav"));
+						}
+						else{
+							dispatcher.stream.on('end', function(){
+								dispatcher = connection.playFile(getDirectory("/scripts/output.wav"));
+							});
+						}
 					}).catch(err =>{
 						console.log(err);
 						ps.dispose();
@@ -352,47 +381,38 @@ client.on('message', function(message){
 			break;
 
 			case 'changerole':
-				if(message.channel.type != "dm"){
-					if(message.content.split(' ')[1]){
-						//Check if the bot is allowed to use the requested role
-						console.log(message.content.split(' ')[1]);
-						console.log('Checking if I can assign the role');
-						var requestedRole = message.guild.roles.find("name", args[0]);
-						var guildRolesKeyArray = message.guild.roles.keyArray();
-						console.log(requestedRole);
-						if(requestedRole == undefined || acceptedRoleNames.includes(message.content.split(' ')[1]) == false){
-							message.reply('that role either doesn\'t exist or I\'m not allowed to assign it. The accepted roles are: ' + acceptedRoleNames.toString().replace(',', ', '));
+				if(message.content.split(' ')[1]){
+					//Check if the bot is allowed to use the requested role
+					console.log(message.content.split(' ')[1]);
+					var requestedRole = message.guild.roles.filter(g=>g.name == message.content.split(' ')[1]);
+					var guildRolesKeyArray = message.guild.roles.keyArray();
+					if(requestedRole.keyArray().length == 0){
+						message.reply("That role either doesn't exist or I'm not allowed to assign it. The accepted roles are: " + acceptedRoleNames);
+						return;
+					}
+					//Check if the user already has the requested role
+					var rolesAlreadyOwned = message.member.roles;
+					for(var i = 0; i < rolesAlreadyOwned.keyArray().length; i++){
+						console.log(rolesAlreadyOwned.get(rolesAlreadyOwned.keyArray()[i]).name + ": " + requestedRole.get(requestedRole.keyArray()[0]).name);
+						if(rolesAlreadyOwned.keyArray()[i] == requestedRole.keyArray()[0]){
+							message.reply("you already have that role!");
 							return;
 						}
-						//Check if the user already has the requested role
-						console.log('Checking if I have the role');
-						var rolesAlreadyOwned = message.member.roles;
-						for(var i = 0; i < rolesAlreadyOwned.keyArray().length; i++){
-							console.log(rolesAlreadyOwned.get(rolesAlreadyOwned.keyArray()[i]).name + ": " + requestedRole.get(requestedRole.id).name);
-							if(rolesAlreadyOwned.keyArray()[i] == requestedRole){
-								message.reply("you already have that role!");
-								return;
-							}
+					}
+					//remove the current role and assign the requested one
+					for(var i = 0; i < guildRolesKeyArray.length; i++){
+						if(acceptedRoleNames.includes(message.guild.roles.get(guildRolesKeyArray[i]).name) && rolesAlreadyOwned.keyArray().includes(guildRolesKeyArray[i]) && requestedRole.keyArray()[0] != guildRolesKeyArray[i]){
+							message.member.removeRole(message.guild.roles.get(guildRolesKeyArray[i]));
 						}
-						//remove the current role and assign the requested one
-						console.log('assigning the new role');
-						for(var i = 0; i < guildRolesKeyArray.length; i++){
-							if(acceptedRoleNames.includes(message.guild.roles.get(guildRolesKeyArray[i]).name) && rolesAlreadyOwned.keyArray().includes(guildRolesKeyArray[i]) && requestedRole.key != guildRolesKeyArray[i]){
-								message.member.removeRole(message.guild.roles.get(guildRolesKeyArray[i]));
-							}
-							else if(acceptedRoleNames.includes(message.guild.roles.get(guildRolesKeyArray[i]).name) && requestedRole.keyArray()[0] == guildRolesKeyArray[i]){
-								message.member.addRole(message.guild.roles.get(guildRolesKeyArray[i]));
-							}
+						else if(acceptedRoleNames.includes(message.guild.roles.get(guildRolesKeyArray[i]).name) && requestedRole.keyArray()[0] == guildRolesKeyArray[i]){
+							message.member.addRole(message.guild.roles.get(guildRolesKeyArray[i]));
 						}
+					}
 
-						message.reply('enjoy your new role!');
-					}
-					else{
-						message.reply('the accepted roles are: ' + acceptedRoleNames.toString().replace(',', ', '));
-					}
+					message.reply('enjoy your new role!');
 				}
 				else{
-					message.channel.send("You can't change role in pm!");
+					message.channel.send("The available roles are: " + acceptedRoleNames);
 				}
 			break;
 
