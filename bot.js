@@ -4,7 +4,8 @@ var re = /([0-9]+)d([0-9]+)([\+?|\-?]?[0-9]*)/;
 var acceptedRoleNames = ['testrole1', 'testrole2', 'testrole3'];
 var execFile = require('child_process').execFile;
 var loggedIn = false;
-var authToken = 'Mzg2NDUyNDI3ODgyMjMzODU5.DQn6_Q.yqom87-sGJ9qxWwsxz_pbdQOEGE';
+var authToken = require("./auth.json");
+console.log(authToken);
 var usersToShutup = [];
 const say = require('say');
 const fs = require('fs');
@@ -22,7 +23,7 @@ let ps = new shell({
 	noProfile: true
 });
 
-client.login(authToken);
+client.login(authToken.token);
 
 console.log('\n\n+-----------+\n|  dinkOS   |\n|  loading  |\n+-----------+\n\n');
 
@@ -36,7 +37,7 @@ client.on('ready', function(){
 		console.log(`Logged in as ${client.user.tag}!`);
 		loggedIn = true;
 	}
-	stockMarket = client.channels.get('419533162679631872');
+	stockMarket = client.channels.get('476724409059508225');
 	stockMarket.bulkDelete(100).catch(console.error);
 	client.guilds.forEach(function(guild){
 		dinkie = guild.members.find('id', '128655163379417097');
